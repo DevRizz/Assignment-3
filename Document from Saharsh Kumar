@@ -1,0 +1,261 @@
+# Presentation Script — "Quantum Feature Enhancement with Network Anomaly Detection"
+### S47: Quantum-II | Poinsettia 1 | Mon, July 20, 2026
+
+> **One quick flag before you rehearse:** the session listing shows each paper getting **15 minutes**, not 20 — check with the session chairs (Dr. Senthilkumar / Dr. Upadhya) when you arrive, since you're 5th in the slot and running long could eat into Q&A or the next speaker's time. Everything below is built for a **20-minute** delivery, but I've marked which sections to cut first if you're told to compress to 15 (look for the ✂️ tags). Better to know now than to get cut off mid-story.
+
+**Total run time target: 19–20 min talk + leave 1 min buffer for chair to jump in.**
+**Your anchor story is Viasat/AcidRain — plant it early, pay it off on Slide 8. That callback is what people will remember when they leave the room.**
+
+---
+
+## Before you start: the 10-second mental frame
+
+You're not reporting results. You're telling the room: *"Ground stations are the softest target in the most consequential infrastructure fight of the decade, and we just showed one concrete way to harden them."* Every slide should feel like it's building toward that sentence, not away from it.
+
+Stand still on your opening line. Don't start walking or clicking until you've said the first sentence and felt the room settle.
+
+---
+
+## SLIDE 1 — Title (0:00 – 0:55)
+
+**Don't read the title slide. Open with a question instead — look up, not at your slides.**
+
+> "Quick show of hands — how many of you have heard of the Viasat KA-SAT hack?"
+>
+> *(pause, look around, whatever the response — nod and continue)*
+>
+> "February 24th, 2022. The morning Russia invaded Ukraine. A single piece of malware called AcidRain disabled over 40,000 satellite modems in about an hour — and as a side effect, took out remote control for 5,800 wind turbines in Germany, a country that wasn't even part of the war. That's not a hypothetical. That's what happens when ground-station anomaly detection misses the signal.
+>
+> I'm Saharsh Kumar Sharma, presenting joint work with Prof. Rajendra Hegadi and Mohd Zubair Khan from IIIT Dharwad. Today I want to show you why classical intrusion detection is structurally blind to a certain kind of attack — and how we used quantum feature maps to see it."
+
+**Delivery note:** This is your hook. Say it slowly. The Viasat fact is doing all the work — don't rush past the numbers (40,000 modems, 5,800 turbines, 1 hour before invasion). Let them land.
+
+---
+
+## SLIDE 2 — GitHub Code (0:55 – 1:10) ✂️ *(cut this to 5 seconds if short on time)*
+
+> "Code and full results are on GitHub — link's up here, happy to share it in the chat or after the talk. I won't dwell on it now, but it's there if you want to reproduce anything I show you."
+
+*(Click past quickly — don't let this slide eat time it doesn't deserve.)*
+
+---
+
+## SLIDE 3 — Space Is Now a Cyber Battlefield (1:10 – 3:40)
+
+**This is where you build the stakes. Slow down here — this slide does the emotional work for the whole talk.**
+
+> "So let's stay with Viasat for one more moment, because it's not an isolated case. Look at the numbers from the CSIS 2025 Space Threat Assessment: **117 cyber incidents against space systems in just the first eight months of 2025** — that's a **118% surge** year over year. And this isn't random hacktivism. State actors — Russia, China, Iran, North Korea — are actively, persistently targeting satellite and aerospace infrastructure.
+>
+> And it's not just the past. General Whiting at U.S. Space Command has publicly named the active threat vectors right now: **telemetry injection, spoofed control traffic, and coordinated multi-satellite intrusions.** These are classified threat categories being tracked *today*.
+>
+> Here's the uncomfortable part: in almost every one of these cases, the weak point wasn't the satellite. It was the **ground station** — the place where telemetry comes down, gets parsed, and gets trusted. And the tools defending that ground station are, for the most part, classical machine learning models built for a different era of network traffic.
+>
+> So the question we set out to answer is simple: **is classical anomaly detection actually enough for this threat model — and if not, what is?**"
+
+**Delivery note:** Point at the three quoted sources on the slide as you cite them (Viasat, CSIS, Space Command) — it signals rigor without you having to say "trust me." Pause after "the ground station" — let that reframe sink in before moving to slide 4.
+
+---
+
+## SLIDE 4 — Why Classical ML Hits a Wall in Space Cybersecurity (3:40 – 5:50)
+
+**Frame this as four concrete failure modes, not an abstract list. Use your fingers/hand gestures — 1, 2, 3, 4 — it helps the audience track structure.**
+
+> "So why does classical ML actually fail here? Four reasons, and each one maps to something real in satellite operations.
+>
+> **One — high-dimensional telemetry.** Satellite telemetry isn't one signal, it's 80-plus correlated features arriving continuously — inter-satellite link states, routing tables, power states, all changing together. Classical kernels lose separability once you're in that many correlated dimensions.
+>
+> **Two — nonlinear attack signatures.** A zero-day exploit or a spoofed telemetry injection doesn't look like a linear deviation. It looks like a subtle, nonlinear twist in how features relate to each other — and even well-engineered classical features can't expose that twist.
+>
+> **Three — noise and adversarial perturbation.** In space, noise isn't an edge case, it's the operating environment — radiation-induced bit flips, jammers, deliberate data poisoning in these newer SAGIN networks. Classical models degrade sharply under exactly this kind of noise, and robustness here isn't optional, it's mission-critical.
+>
+> **Four — unseen attack geometries.** Classical RBF kernels have a *fixed* feature geometry, baked in at design time. They cannot adapt when adversaries evolve their tactics — and adversaries always evolve.
+>
+> Now here's the physics insight that motivated this whole project: **quantum feature maps embed data into an exponentially larger Hilbert space.** That space can expose correlations that are structurally invisible to a classical kernel — not because classical methods are badly tuned, but because the geometry they're searching in is fundamentally smaller."
+
+**Delivery note:** "Structurally invisible" is your key phrase — it's the thesis of the whole paper in three words. Say it, then pause, then move.
+
+---
+
+## SLIDE 5 — Our Hybrid Quantum–Classical Pipeline (5:50 – 9:00)
+
+**This is the technical core. Slow, deliberate, walk the pipeline left to right exactly as it's drawn. This is also where you lose people if you rush — so don't.**
+
+> "So here's what we actually built. Walk with me left to right.
+>
+> We start with raw network traffic — two datasets, CICIDS-2017 and an internal high-dimensional dataset we call SNT, 100,000 samples combined. I'll come back to why we chose two very different datasets in a minute, because that choice is actually central to our findings.
+>
+> That traffic goes through preprocessing — StandardScaler for the classical path, PCA down to 8 components where we test dimensionality reduction, and critically, we rescale everything into **[0, 2π]** — because that's the domain quantum rotation gates operate in. You can't feed a quantum circuit raw feature values; you have to encode them as rotation angles.
+>
+> That feeds into an **8-qubit quantum feature map** — and we test two versions. The **Fixed ZZ map** is parameter-free: a two-layer ring-topology entanglement structure, a fixed baseline with no learning involved. The **Trainable ZZ map** has **128 learnable parameters**, and this is our main contribution — it's optimized using something called **Kernel Target Alignment**, or KTA.
+>
+> Let me explain KTA in one sentence, because everything downstream depends on understanding it: **KTA measures how well your kernel's notion of 'similarity' matches the true class labels** — in plain terms, it asks 'are same-class points actually close together in this feature space, and are different-class points actually far apart?' Higher KTA means cleaner separation. And because our ZZ map is trainable, we can literally optimize the quantum circuit's parameters to *maximize* that alignment for each specific dataset — it's a feedback loop, shown right here on the slide: encode, measure KTA, adjust circuit parameters, repeat.
+>
+> The circuit outputs a **16-dimensional quantum feature vector** — expectation values of single qubits and correlated qubit pairs. That vector then becomes the *input* to completely standard classical classifiers — XGBoost, Random Forest, SVM. So to be clear: **we are not replacing classical ML. We're using quantum circuits as a feature engineering front-end** for classifiers people already trust and already deploy."
+
+**Delivery note:** "We are not replacing classical ML, we're using quantum as a feature engineering front-end" — say this explicitly and clearly. It preempts the most common skeptical question in quantum ML talks ("so is this just quantum hype?") before anyone asks it.
+
+---
+
+## SLIDE 6 — SNT Dataset: Quantum Advantage Is Real (9:00 – 12:00)
+
+**This is your strongest evidence slide. Lead with the table, then zoom into the three big numbers at the bottom. Use the word "real" from the slide title — it signals you're being honest, not promotional.**
+
+> "So does this actually work? Let's look at SNT first — remember, SNT is our high-dimensional, nonlinear dataset, deliberately chosen because it mirrors the structure of satellite telemetry and inter-satellite link traffic in LEO and SAGIN networks. If quantum feature maps have an advantage anywhere, this is where we'd expect to see it.
+>
+> Look at this KTA table across five independent subsets. Classical RBF kernels score between essentially zero — look at subset 3, **0.0001**, functionally no separability at all — up to about 0.30. Fixed ZZ does a bit better but caps out around 0.19–0.20. Trainable ZZ? **0.69 to 0.77, consistently, across every single subset.**
+>
+> And subset 3 is the one I want you to remember: classical scored **0.0001** — essentially random — and trainable ZZ reached **0.7706**. That's a **793% improvement**. That's not incremental tuning. That's a kernel discovering structure that was completely invisible to the classical baseline.
+>
+> And this shows up in accuracy too, not just an abstract alignment metric — Random Forest and SVM with trainable ZZ hit **1.0000 accuracy**, perfect classification, versus Fixed-ZZ-SVM at 0.9407. And under 30% Gaussian noise — which I'll dig into next — trainable ZZ holds at **0.9247**, matching classical, while Fixed ZZ has already collapsed to 0.5150 — that's close to a coin flip.
+>
+> So on data that *looks like* satellite telemetry — high-dimensional, nonlinear, correlated — the quantum advantage isn't marginal. It's dramatic."
+
+**Delivery note:** Slow down on "793%." Let it be the biggest number you say all talk. Don't rush to the next sentence — count a full second of silence after saying it.
+
+---
+
+## SLIDE 7 — Noise Robustness: Mission-Critical Property (12:00 – 14:30)
+
+**This slide answers the question every engineer in the room is silently asking: "okay but does this survive the real world?" Frame it that way explicitly.**
+
+> "Now, results on clean data are nice, but every one of you working in aerospace knows that clean data doesn't exist in orbit. Radiation flips bits. Jammers inject noise. Adversaries poison data deliberately. So the real test isn't 'does it work' — it's **'does it survive.'**
+>
+> Here's the headline: at **30% Gaussian noise**, trainable ZZ holds at **0.9247 accuracy** — essentially matching the classical baseline. Fixed ZZ, at that same noise level, has already collapsed to **0.5150** — and here's the part that should worry you if you're thinking about deployment: **Fixed ZZ starts collapsing at just 5% noise**, dropping to 0.5677, and it never recovers, at any noise level tested. It's not a gradual degradation — it's a cliff.
+>
+> Why does trainable ZZ survive when fixed ZZ doesn't? Because KTA optimization doesn't just improve accuracy — it explicitly builds **wider margins between classes**. And wider margins are exactly what you need to absorb noise without flipping a classification decision. This is the mechanism, not a coincidence: task-adaptive embeddings survive conditions that structurally destroy fixed mappings. And that property — **survives real-world noise** — is the single most important thing for anyone thinking about NISQ-era hardware deployment in an actual ground station."
+
+**Delivery note:** Emphasize "cliff, not gradual degradation" with a hand motion — flat, then a sharp drop. Visual language sticks.
+
+---
+
+## SLIDE 8 — Direct Applications to Space & Aerospace Infrastructure (14:30 – 17:30)
+
+**This is the payoff slide — where you close the loop back to your Viasat opening. Don't read all six boxes as a list; group them into a narrative with the Viasat box as the emotional peak.**
+
+> "So let's bring this back down to earth — pun intended. What does this actually mean for deployment?
+>
+> **First, the primary target:** LEO constellation ground stations. Starlink, OneWeb, and similar constellations generate exactly the profile SNT was built to mirror — massive, correlated, high-dimensional telemetry. That's precisely where our trainable ZZ map hits 1.0000 accuracy. And because our circuit is only 8 qubits at depth 16, it's compatible with **NISQ hardware available today** — IBM Eagle, Quantinuum H2 — this isn't a 'wait for fault-tolerant quantum computers' story. It's deployable now, on cloud-accessible quantum backends.
+>
+> **Second — and this is the one I want you to sit with —** let's go back to Viasat. AcidRain succeeded because anomaly detection missed an unusual mass-access pattern on the management network — a nonlinear traffic deviation. Our results show a **793% KTA improvement** on exactly that kind of nonlinear deviation. That doesn't mean we would have stopped AcidRain — I want to be careful not to overclaim that — but it means the *class* of signal that AcidRain exploited is precisely the class of signal our method is built to expose, long before an attack like wiper execution happens.
+>
+> **Third**, this extends naturally to SAGIN and 6G — dynamic inter-satellite and aerial-relay routing anomalies that classical methods flag inconsistently, and to telemetry spoofing detection, which US Space Command already names as an active, classified threat vector — and to zero-day APT detection, since state actors are, right now, targeting exactly this infrastructure."
+
+**Delivery note:** This is your callback moment. Say "let's go back to Viasat" and actually pause — visibly connect it to slide 1. The room should feel the loop close. This is the single line people will quote back to you afterward if you land it.
+
+---
+
+## SLIDE 9 — Discussions: Contributions / Limitations / Future Scope (17:30 – 19:00)
+
+**Be crisp and honest here — this is where credibility gets sealed, not hype. Limitations shown confidently make you MORE trustworthy, not less.**
+
+> "Let me close with an honest accounting.
+>
+> **What we contributed:** a trainable ZZ feature map with KTA optimization; a framework showing quantum advantage is *geometry-dependent*, not universal — CICIDS-2017, which is engineered to already be linearly separable, showed classical methods still winning, and we report that honestly rather than burying it; the first systematic noise benchmarking up to 70% Gaussian noise for quantum intrusion detection; and practical deployment guidelines for when quantum feature engineering is actually worth the overhead.
+>
+> **What we haven't done yet, and won't pretend we have:** this is 8-qubit NISQ simulation, not hardware execution. We evaluated on terrestrial datasets that *mirror* satellite telemetry structure — not actual satellite telemetry, which we don't yet have access to. We tested Gaussian noise, not real hardware quantum noise. And we have no latency analysis for real-time deployment yet.
+>
+> **So where this goes next:** validating on real satellite telemetry data, running these circuits on actual IBM Quantum or Quantinuum hardware instead of simulation, extending to quantum graph neural networks for constellation-wide detection, and integrating into autonomous SAGIN cybersecurity frameworks."
+
+**Delivery note:** Say the limitations in the same steady tone as the contributions — no apologetic energy. Confident honesty reads as rigor to a technical audience.
+
+---
+
+## SLIDE 10 — Thank You (19:00 – 19:45)
+
+**Land the plane. Short, warm, and open the floor with energy, not exhaustion.**
+
+> "So — to bring it all the way back: ground stations are the softest link in the most consequential infrastructure fight of this decade, and geometry-aware quantum feature maps give us one concrete, near-term-deployable way to harden that link.
+>
+> Thank you — this is joint work with Prof. Rajendra Hegadi and Mohd Zubair Khan at IIIT Dharwad. I'd genuinely love your pushback and questions — quantum-classical hybrids for security is still a young field, and the disagreements in this room are exactly how it gets better."
+
+**Delivery note:** Smile on the last line. Inviting disagreement warmly, rather than defensively, tends to produce a friendlier and sharper Q&A.
+
+---
+
+## If you're told to cut to 15 minutes
+
+Cut in this order, in priority:
+1. ✂️ Slide 2 (GitHub) — down to one sentence, no pause.
+2. ✂️ Trim Slide 4's four points to a faster cadence — state each in one sentence instead of two, drop the individual elaboration on "noise/adversarial" (point 3) since Slide 7 covers noise in depth anyway.
+3. ✂️ On Slide 8, cut the SAGIN/6G and zero-day APT bullets down to a single combined sentence — keep the Viasat callback in full, it's non-negotiable.
+4. ✂️ On Slide 9, state contributions and limitations as quick fused bullets rather than full sentences.
+
+**Never cut:** the Viasat opening (Slide 1), the 793% number (Slide 6), the noise-cliff framing (Slide 7), or the Viasat callback (Slide 8). Those four moments are what make this talk memorable instead of just informative.
+
+---
+
+## Anticipated Q&A — full prep
+
+**How to use this section:** Don't memorize word-for-word — internalize the *number* in each answer, because that's what signals you actually did the work. Chairs and quantum-track audiences test for exactly one thing: do you know your own results cold, including the ones that don't flatter you. Sections are ordered roughly by how likely they are to come up first.
+
+### A. "Is this even real quantum advantage?" (expect this within the first 2 questions)
+
+**Q1: This is classical simulation of quantum circuits, right? So is there any actual quantum advantage here, or just a different classical feature transform?**
+→ "Correct, everything here is simulated — we say that openly in the paper, it's standard practice for near-term QML research since 8-qubit hardware runs are still noisy and slow to iterate on. But the advantage we're measuring isn't 'quantum vs classical FLOPs' — it's about *feature space geometry*. The ZZ map's entangling structure creates correlations between features that a classical kernel like RBF cannot represent, because RBF's geometry is fixed and isotropic. Whether that geometry is computed on a simulator or real hardware doesn't change the fact that it's a genuinely different, richer feature space. The simulation is a stand-in for the circuit's math, not a shortcut past it."
+
+**Q2: Couldn't a sufficiently expressive classical kernel — say a deep neural feature extractor — achieve the same 793% KTA improvement without any quantum circuit at all?**
+→ "Possibly, and that's a fair challenge — we didn't benchmark against a trained classical deep kernel, only against RBF, which is the standard baseline in IDS literature. What we can say is that RBF is what's actually deployed in production intrusion detection systems today, so the comparison is practically meaningful even if it's not the tightest possible classical baseline. Comparing against a trainable classical kernel — like a Nystrom-approximated or neural tangent kernel — is a genuinely useful next experiment, and I'd say it's a gap in this version of the work rather than something we can wave away."
+
+**Q3: Why should anyone care about quantum kernels when NISQ hardware is noisy, slow, and expensive to access compared to just running a bigger classical model?**
+→ "Two honest reasons we'd give, and one caveat. First, our noise-robustness results — trainable ZZ holding 0.9247 accuracy at 30% Gaussian noise vs Fixed ZZ collapsing to 0.5150 — suggest KTA-optimized embeddings build wider decision margins, which could matter independent of who's running the circuit. Second, ground-station compute is a genuinely different constraint environment than a data center — if quantum cloud access becomes cheap and low-latency, an 8-qubit circuit is a very different hardware footprint than a large ensemble model. The caveat: we have not done a real latency or cost comparison against classical inference, and until we do, I'd call this a promising direction, not a settled economic case."
+
+### B. Questions that dig into your actual numbers (know these cold)
+
+**Q4: Your Table VII shows trainable ZZ getting *worse* accuracy after PCA — 0.9983 vs classical's 0.9993 on SNT — even though KTA went *up* 181.7% over classical RBF. Doesn't that contradict your own thesis that higher KTA means better classification?**
+→ "Good catch, and it's a real tension we should be upfront about. KTA measures how well-aligned the *kernel matrix* is with class labels — it's a geometric property of the feature space, not a guarantee of final classifier accuracy, especially once you're already near ceiling. On raw SNT, classical accuracy has real room to improve, so higher KTA translates directly into a large accuracy jump — you can literally see it in Table IV, Fixed-ZZ-SVM at 0.9407. But after PCA, classical is already at 0.9993 — there's almost no headroom left for any method to show up as 'better' in raw accuracy, so a KTA improvement doesn't show up in accuracy, it shows up in the *robustness* margins downstream in Table IX. KTA predicts geometry and downstream robustness better than it predicts small deltas in near-ceiling accuracy — that's a nuance we'd want to make more explicit in a longer paper."
+
+**Q5: On CICIDS-2017, your own KTA table shows trainable ZZ getting -39.4% *worse* alignment than classical on subset 1. Why include a negative result like that instead of just excluding CICIDS-2017 from the paper?**
+→ "Because it's the finding, not a failure to hide. If we'd only run SNT, the paper would read as 'quantum wins,' which is both less true and less useful than what we actually found: quantum feature maps help specifically on high-dimensional, correlated data, and *don't* help — sometimes actively hurt alignment — on data that's already engineered for linear separability, which is exactly what CICIDS-2017 is, by design, since it's built from hand-crafted flow-level features. That negative result is what lets us give a deployment recommendation instead of a marketing claim: check your data's geometry before reaching for a quantum feature map."
+
+**Q6: Fixed-ZZ-SVM on CICIDS-2017 gets an F1-score of only 0.1623 — that's a near-total failure. Why does that specific combination break so badly?**
+→ "That's the most extreme failure mode in the whole paper, and worth being direct about. SVM with an RBF kernel is already sensitive to feature scale and geometry, and Fixed ZZ has no ability to adapt its mapping to CICIDS-2017's engineered, largely linear structure — it's a static nonlinear distortion applied to data that didn't need one. The distortion actively hurts class separability for this specific classifier-embedding pairing, and the low F1 relative to accuracy also tells you it's a class-imbalance-driven failure — the model is likely defaulting toward the majority class. It's a cautionary example for exactly the deployment point in Q5: mismatched geometry and mismatched classifier choice compound each other."
+
+**Q7: Your noise table on CICIDS-2017 with PCA shows trainable ZZ actually *beating* classical at high noise levels — 0.79 vs 0.7923 at 50%, and 0.759 vs 0.7823 at 70% — even though classical wins on clean accuracy everywhere else on that dataset. What's going on there?**
+→ "That's genuinely one of the more interesting secondary findings, and it's counterintuitive given the KTA numbers went classical's way on that dataset. Our read is that PCA compression changes the geometry enough that the quantum embedding's wider inter-class margins — the same mechanism that helped SNT survive noise — still provide some benefit even on data where quantum didn't help *clean* alignment. It suggests noise robustness and clean-data KTA are somewhat separable properties, not two names for the same thing. We flag it as future work rather than over-interpreting a crossover that's this close — the margin is under 3 points and we haven't run significance testing on it specifically."
+
+**Q8: Your standard deviations across subsets are extremely low — 0.0000 to 0.0050. With only 5 subsets per dataset, how confident should we actually be in these numbers, statistically?**
+→ "Fair pressure-test. Five subsets is a reasonable number for showing consistency, not for a rigorous confidence interval — we didn't run formal significance tests like a paired t-test across subsets, and I'd say that's a legitimate gap rather than something the low std alone resolves. What the low variance does tell us is that the *method* is stable and reproducible run to run, which matters practically, but 'stable' and 'statistically significant relative to classical' are different claims, and we're only confidently making the first one right now."
+
+### C. Questions about the datasets
+
+**Q9: What exactly is the SNT dataset — where does it come from, and is it public?**
+→ Prepare a direct one-line answer here based on the actual provenance of your SNT dataset (internal/collected/synthetic/collaborator-provided) — this is the single most likely factual gap a sharp questioner will probe, so know precisely what you'll say about origin, size, and availability before you're asked. If it isn't public yet, say so plainly and mention whether release is planned.
+
+**Q10: You describe SNT as mirroring satellite telemetry, but it's not actual satellite telemetry. Isn't that a fairly big leap to justify the aerospace framing of this whole talk?**
+→ "That's a fair challenge and we say it plainly in our limitations: SNT was chosen because it shares the *structural* profile we care about — high-dimensional, strongly correlated, nonlinear — not because it *is* space telemetry. The aerospace framing is a motivated hypothesis about where this method should transfer, based on structural similarity, not a validated deployment result. Validating against real satellite telemetry — OPS-SAT-style data, for instance — is explicitly listed as our top future-work priority, and until that's done, I'd describe the aerospace application as well-motivated, not proven."
+
+**Q11: CICIDS-2017 is from 2018 and fairly dated as an intrusion detection benchmark. Why use it instead of a more recent dataset?**
+→ "Mainly because it's still the most widely used benchmark in the classical IDS literature, which makes our classical baselines directly comparable to published numbers — our XGBoost result of 0.9955 lines up closely with prior reported results near 99.5%, which is actually a useful sanity check that our pipeline is behaving correctly. But you're right that it's dated, and testing against a more recent benchmark with contemporary attack patterns is a reasonable extension."
+
+### D. Comparison to prior work / novelty questions
+
+**Q12: Toufah et al. already applied ZZ feature maps and QAOA embeddings — you cite them directly. What's actually new here beyond swapping their medical dataset for a cybersecurity one?**
+→ "Three things beyond the domain swap. First, they used fixed circuits; we introduce a *trainable* 128-parameter ZZ map explicitly optimized via Kernel Target Alignment, which is a different circuit design, not just a relabeled application. Second, we run a systematic geometry comparison — deliberately using one dataset engineered for linear separability and one that isn't, to isolate *when* quantum embeddings help, which their single-domain study doesn't address. Third, we ran the first systematic noise-robustness benchmark for this class of method up to 70% Gaussian perturbation — noise sensitivity wasn't part of their evaluation at all, and it's the piece that actually matters for real-world deployment."
+
+**Q13: Projected quantum kernels are generally considered more noise-robust than fidelity kernels in the recent literature — why did you use fidelity-style ZZ kernels instead?**
+→ "That's a well-placed question — Hubregtsen et al. and others have shown projected kernels handle noise better in general. We chose the ZZ fidelity-kernel formulation specifically to stay close to the Toufah et al. baseline we were extending, to isolate the effect of *trainability* rather than changing two variables at once. Testing a trainable *projected* kernel instead is a natural next step, and given our own noise-collapse results with Fixed ZZ, I'd genuinely expect it to perform even better — that's on our list."
+
+### E. Deployment / practical questions
+
+**Q14: You mention IBM Eagle and Quantinuum H2 as NISQ-compatible targets — have you actually run this on real hardware, even a small subset?**
+→ "Not yet — everything reported today is simulated. The claim is about *coherence budget*, not tested performance: our circuit is 8 qubits at depth 16–20, which is within what those processors can currently support without excessive error accumulation, based on their published specs. Actually running even a small subset on real hardware is the immediate next step, and I'd expect to see some accuracy degradation from real gate and readout noise that our Gaussian noise model doesn't fully capture."
+
+**Q15: What's the actual latency of this pipeline — could it run in real time on live ground-station telemetry?**
+→ "We don't have a latency benchmark yet, and I want to be upfront that this is a real gap for an operational claim — quantum kernel construction scales O(N²) with sample count, which is exactly why we used 10K-sample subsets instead of the full 50K dataset for training. For real-time deployment you'd likely need either much smaller batch windows or classically-approximated quantum kernels to keep pace with live telemetry rates. That's explicitly future work, not something I can give you a number for today."
+
+**Q16: If I'm a security engineer at a ground station operator, what's your actual recommendation — should I go build this today?**
+→ "Only if your telemetry looks like SNT, not CICIDS — meaning high-dimensional, correlated, and not already reduced to hand-engineered linear features. If that's your data, our results suggest a KTA-optimized trainable quantum embedding is worth prototyping, especially given the noise-robustness numbers. If your features are already well-engineered and linearly separable, our own results say stick with XGBoost — it wins there, and we're not going to pretend otherwise. That 'check your data geometry first' recommendation is the practical takeaway we want engineers to walk away with, more than any specific accuracy number."
+
+### F. If someone tries to bait you into overclaiming
+
+**Q17: So would your method have actually stopped the Viasat AcidRain attack?**
+→ Don't say yes. Say: "I can't claim that directly — we haven't tested on Viasat's actual traffic, and I'd be overselling the work if I said otherwise. What I can say is that AcidRain exploited an unusual, nonlinear mass-access pattern on the management network, and that specific class of signal — nonlinear, high-dimensional correlation deviations — is exactly what our 793% KTA improvement demonstrates we can expose that classical RBF kernels miss. The honest claim is 'this class of attack signature is the one we're built to catch,' not 'we would have caught this specific attack.'"
+
+### G. Quick-fire technical clarifications (short answers, know instantly)
+
+- **"How many qubits, again?"** → 8 qubits, 16-dimensional output feature vector (single-qubit + pairwise ⟨Z⟩ expectation values).
+- **"How many trainable parameters in the quantum circuit?"** → 128, optimized with Adam, learning rate 0.05, 15 epochs, per 10K-sample subset using an 80-sample calibration set.
+- **"Total number of experiments run?"** → 30 model configurations × 10 subsets = 300 total evaluations.
+- **"PCA components?"** → 8 components, retaining 70–90% of variance depending on the subset.
+- **"Classifier hyperparameters?"** → XGBoost: 200 trees, max depth 5, lr 0.05. Random Forest: 150 trees, max depth 10. SVM: RBF kernel, C=1.0 — standard benchmark configs, not exhaustively tuned per subset, deliberately, to reflect realistic deployment settings.
+- **"Why only up to 70% noise, why not 100%?"** → 70% Gaussian perturbation is already well beyond realistic operational noise for most deployment scenarios; it was chosen as a stress-test ceiling, not a claim about expected real-world noise levels.
